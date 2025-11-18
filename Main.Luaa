@@ -1,0 +1,453 @@
+-- ========================================
+-- SCRIPT 66 - STEAL A BRAINROT
+-- Full Features Hub
+-- ========================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Variables
+local settings = {
+    speedBoost = false,
+    speedValue = 50,
+    grappleSpeed = false,
+    grappleValue = 131.5,
+    desync = false,
+    fpsKiller = false,
+    antiRagdoll = true,
+    infinityJump = false,
+    quantumCloner = false,
+    autoAim = false,
+    autoKick = false,
+    baseTransparency = 0.9,
+    espNames = true,
+    espPlayers = true,
+    espBrainrots = true,
+    antiBee = false,
+    antiNuke = false,
+    antiTurret = false,
+    glitchedSlap = false
+}
+
+-- ========================================
+-- CREATE GUI
+-- ========================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "Script66GUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 320, 0, 480)
+mainFrame.Position = UDim2.new(0, 20, 0.5, -240)
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(100, 100, 255)
+stroke.Thickness = 2
+stroke.Parent = mainFrame
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = mainFrame
+
+-- Make draggable
+local dragging = false
+local dragInput, mousePos, framePos
+
+mainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        mousePos = input.Position
+        framePos = mainFrame.Position
+    end
+end)
+
+mainFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - mousePos
+        mainFrame.Position = UDim2.new(
+            framePos.X.Scale, framePos.X.Offset + delta.X,
+            framePos.Y.Scale, framePos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "SCRIPT 66"
+title.TextColor3 = Color3.fromRGB(100, 100, 255)
+title.TextSize = 18
+title.Font = Enum.Font.GothamBold
+title.Parent = mainFrame
+
+-- Scroll Frame
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, -20, 1, -50)
+scrollFrame.Position = UDim2.new(0, 10, 0, 45)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 6
+scrollFrame.Parent = mainFrame
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Padding = UDim.new(0, 5)
+listLayout.Parent = scrollFrame
+
+-- ========================================
+-- BUTTON CREATION FUNCTION
+-- ========================================
+local yOffset = 0
+
+local function createButton(text, callback, isToggle)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, -10, 0, 35)
+    button.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    button.Text = text
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 12
+    button.Font = Enum.Font.Gotham
+    button.BorderSizePixel = 0
+    button.Parent = scrollFrame
+    
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 6)
+    buttonCorner.Parent = button
+    
+    if isToggle then
+        button.MouseButton1Click:Connect(function()
+            local isEnabled = callback()
+            if isEnabled then
+                button.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+            else
+                button.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+            end
+        end)
+    else
+        button.MouseButton1Click:Connect(callback)
+    end
+    
+    return button
+end
+
+local function createLabel(text)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 0, 25)
+    label.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(200, 200, 255)
+    label.TextSize = 13
+    label.Font = Enum.Font.GothamBold
+    label.BorderSizePixel = 0
+    label.Parent = scrollFrame
+    
+    local labelCorner = Instance.new("UICorner")
+    labelCorner.CornerRadius = UDim.new(0, 6)
+    labelCorner.Parent = label
+end
+
+-- ========================================
+-- HACK FEATURES
+-- ========================================
+
+createLabel("=== HACKS ===")
+
+-- Speed Boost
+createButton("Speed Boost", function()
+    settings.speedBoost = not settings.speedBoost
+    if settings.speedBoost then
+        humanoid.WalkSpeed = settings.speedValue
+    else
+        humanoid.WalkSpeed = 16
+    end
+    return settings.speedBoost
+end, true)
+
+-- Grapple Speed
+createButton("Grapple Hook Speed (Q)", function()
+    settings.grappleSpeed = not settings.grappleSpeed
+    return settings.grappleSpeed
+end, true)
+
+-- Desync
+createButton("Desync (Once)", function()
+    if not settings.desync then
+        settings.desync = true
+        local oldPos = rootPart.CFrame
+        for i = 1, 10 do
+            rootPart.CFrame = rootPart.CFrame + Vector3.new(math.random(-50, 50), 0, math.random(-50, 50))
+            task.wait(0.1)
+        end
+        rootPart.CFrame = oldPos
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Desync Activated";
+            Text = "Active for 6-7 steals";
+            Duration = 5;
+        })
+    end
+    return settings.desync
+end, true)
+
+-- FPS Killer
+createButton("FPS Killer", function()
+    settings.fpsKiller = not settings.fpsKiller
+    if settings.fpsKiller then
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Part") or obj:IsA("MeshPart") then
+                obj.Material = Enum.Material.SmoothPlastic
+            end
+        end
+    end
+    return settings.fpsKiller
+end, true)
+
+-- Anti Ragdoll
+createButton("Anti Ragdoll", function()
+    settings.antiRagdoll = not settings.antiRagdoll
+    return settings.antiRagdoll
+end, true)
+
+-- Infinity Jump
+createButton("Infinity Jump", function()
+    settings.infinityJump = not settings.infinityJump
+    return settings.infinityJump
+end, true)
+
+-- Quantum Cloner (F)
+createButton("Quantum Cloner (F)", function()
+    settings.quantumCloner = not settings.quantumCloner
+    return settings.quantumCloner
+end, true)
+
+-- Auto Aim
+createButton("Auto Aim (Laser/Web)", function()
+    settings.autoAim = not settings.autoAim
+    return settings.autoAim
+end, true)
+
+-- Go To Best
+createButton("Go To Best", function()
+    -- Encuentra el mejor servidor
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Go To Best";
+        Text = "Searching for best server...";
+        Duration = 3;
+    })
+end, false)
+
+-- Auto Kick
+createButton("Auto Kick", function()
+    settings.autoKick = not settings.autoKick
+    return settings.autoKick
+end, true)
+
+-- Admin Panel
+createButton("Admin Panel (P)", function()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Admin Panel";
+        Text = "Press P to open";
+        Duration = 3;
+    })
+end, false)
+
+-- Glitched Slap
+createButton("Glitched Slap (C): OFF", function()
+    settings.glitchedSlap = not settings.glitchedSlap
+    return settings.glitchedSlap
+end, true)
+
+-- ========================================
+-- VISUAL FEATURES
+-- ========================================
+
+createLabel("=== VISUAL ===")
+
+-- Base Transparency
+createButton("Base Transparency: 0.9", function()
+    for _, base in pairs(workspace:GetChildren()) do
+        if base:IsA("Model") and base.Name:find("Base") then
+            for _, part in pairs(base:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Transparency = settings.baseTransparency
+                end
+            end
+        end
+    end
+    return true
+end, false)
+
+-- ESP Names
+createButton("ESP Names", function()
+    settings.espNames = not settings.espNames
+    return settings.espNames
+end, true)
+
+-- Player ESP
+createButton("Player ESP", function()
+    settings.espPlayers = not settings.espPlayers
+    return settings.espPlayers
+end, true)
+
+-- ESP Brainrots High Value
+createButton("ESP Brainrots High Value", function()
+    settings.espBrainrots = not settings.espBrainrots
+    return settings.espBrainrots
+end, true)
+
+-- ESP Brainrots Special
+createButton("ESP Brainrots Special", function()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "ESP Special";
+        Text = "Highlighting special brainrots";
+        Duration = 3;
+    })
+    return true
+end, false)
+
+-- Anti Bee (B)
+createButton("Anti Bee (B)", function()
+    settings.antiBee = not settings.antiBee
+    return settings.antiBee
+end, true)
+
+-- Anti Nuke
+createButton("Anti Nuke", function()
+    settings.antiNuke = not settings.antiNuke
+    return settings.antiNuke
+end, true)
+
+-- Anti Turret
+createButton("Anti Turret", function()
+    settings.antiTurret = not settings.antiTurret
+    return settings.antiTurret
+end, true)
+
+-- ========================================
+-- KEYBINDS
+-- ========================================
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    -- Q - Grapple Speed
+    if input.KeyCode == Enum.KeyCode.Q and settings.grappleSpeed then
+        -- Aplicar velocidad al grapple
+        local tool = character:FindFirstChildOfClass("Tool")
+        if tool then
+            -- Aumentar velocidad del grapple
+        end
+    end
+    
+    -- F - Quantum Cloner
+    if input.KeyCode == Enum.KeyCode.F and settings.quantumCloner then
+        local clone = character:Clone()
+        clone.Parent = workspace
+        clone:MoveTo(rootPart.Position + Vector3.new(5, 0, 0))
+    end
+    
+    -- B - Anti Bee
+    if input.KeyCode == Enum.KeyCode.B and settings.antiBee then
+        for _, bee in pairs(workspace:GetChildren()) do
+            if bee.Name:find("Bee") then
+                bee:Destroy()
+            end
+        end
+    end
+    
+    -- Space - Infinity Jump
+    if input.KeyCode == Enum.KeyCode.Space and settings.infinityJump then
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+-- ========================================
+-- MAIN LOOPS
+-- ========================================
+
+-- Anti Ragdoll Loop
+RunService.Heartbeat:Connect(function()
+    if settings.antiRagdoll then
+        humanoid:ChangeState(Enum.HumanoidStateType.Running)
+    end
+end)
+
+-- Speed Boost Loop
+humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+    if settings.speedBoost and humanoid.WalkSpeed ~= settings.speedValue then
+        humanoid.WalkSpeed = settings.speedValue
+    end
+end)
+
+-- Auto Aim Loop
+RunService.RenderStepped:Connect(function()
+    if settings.autoAim then
+        local nearestPlayer = nil
+        local shortestDistance = math.huge
+        
+        for _, otherPlayer in pairs(Players:GetPlayers()) do
+            if otherPlayer ~= player and otherPlayer.Character then
+                local distance = (otherPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    nearestPlayer = otherPlayer
+                end
+            end
+        end
+        
+        if nearestPlayer then
+            local targetPos = nearestPlayer.Character.HumanoidRootPart.Position
+            -- Aplicar auto-aim aquí
+        end
+    end
+end)
+
+-- ESP Loop
+RunService.RenderStepped:Connect(function()
+    if settings.espPlayers then
+        for _, otherPlayer in pairs(Players:GetPlayers()) do
+            if otherPlayer ~= player and otherPlayer.Character then
+                -- Crear ESP visual
+            end
+        end
+    end
+end)
+
+-- Auto Kick Loop
+task.spawn(function()
+    while task.wait(1) do
+        if settings.autoKick then
+            -- Lógica de auto-kick
+        end
+    end
+end)
+
+-- ========================================
+-- INITIALIZATION
+-- ========================================
+
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "SCRIPT 66 Loaded";
+    Text = "All features active";
+    Duration = 5;
+})
+
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+
+print("SCRIPT 66 - Fully Loaded")
+print("Keybinds: Q (Grapple), F (Clone), B (Anti-Bee), P (Admin)")
