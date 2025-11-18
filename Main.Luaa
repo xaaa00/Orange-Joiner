@@ -1,39 +1,44 @@
 -- ========================================
 -- SCRIPT 66 - STEAL A BRAINROT
--- Full Features Hub
+-- Working Features Only
 -- ========================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TeleportService = game:GetService("TeleportService")
+local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
+local camera = Workspace.CurrentCamera
+
+-- Wait for character
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Variables
+-- Update character on respawn
+player.CharacterAdded:Connect(function(char)
+    character = char
+    humanoid = char:WaitForChild("Humanoid")
+    rootPart = char:WaitForChild("HumanoidRootPart")
+end)
+
+-- Settings
 local settings = {
     speedBoost = false,
     speedValue = 50,
-    grappleSpeed = false,
-    grappleValue = 131.5,
-    desync = false,
-    fpsKiller = false,
-    antiRagdoll = true,
+    antiRagdoll = false,
     infinityJump = false,
-    quantumCloner = false,
-    autoAim = false,
-    autoKick = false,
-    baseTransparency = 0.9,
-    espNames = true,
-    espPlayers = true,
-    espBrainrots = true,
-    antiBee = false,
-    antiNuke = false,
-    antiTurret = false,
-    glitchedSlap = false
+    noClip = false,
+    espPlayers = false,
+    espBrainrots = false,
+    fullbright = false,
+    baseTransparency = false,
+    flySpeed = 50,
+    flying = false
 }
+
+-- ESP Storage
+local espObjects = {}
 
 -- ========================================
 -- CREATE GUI
@@ -44,8 +49,8 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 320, 0, 480)
-mainFrame.Position = UDim2.new(0, 20, 0.5, -240)
+mainFrame.Size = UDim2.new(0, 280, 0, 420)
+mainFrame.Position = UDim2.new(0, 20, 0.5, -210)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
@@ -59,7 +64,7 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 10)
 corner.Parent = mainFrame
 
--- Make draggable
+-- Dragging
 local dragging = false
 local dragInput, mousePos, framePos
 
@@ -111,9 +116,8 @@ listLayout.Padding = UDim.new(0, 5)
 listLayout.Parent = scrollFrame
 
 -- ========================================
--- BUTTON CREATION FUNCTION
+-- BUTTON FUNCTIONS
 -- ========================================
-local yOffset = 0
 
 local function createButton(text, callback, isToggle)
     local button = Instance.new("TextButton")
@@ -121,7 +125,7 @@ local function createButton(text, callback, isToggle)
     button.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     button.Text = text
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = 12
+    button.TextSize = 11
     button.Font = Enum.Font.Gotham
     button.BorderSizePixel = 0
     button.Parent = scrollFrame
@@ -135,8 +139,10 @@ local function createButton(text, callback, isToggle)
             local isEnabled = callback()
             if isEnabled then
                 button.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+                button.Text = text .. ": ON"
             else
                 button.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+                button.Text = text .. ": OFF"
             end
         end)
     else
@@ -163,10 +169,10 @@ local function createLabel(text)
 end
 
 -- ========================================
--- HACK FEATURES
+-- MOVEMENT FEATURES
 -- ========================================
 
-createLabel("=== HACKS ===")
+createLabel("=== MOVEMENT ===")
 
 -- Speed Boost
 createButton("Speed Boost", function()
@@ -179,97 +185,34 @@ createButton("Speed Boost", function()
     return settings.speedBoost
 end, true)
 
--- Grapple Speed
-createButton("Grapple Hook Speed (Q)", function()
-    settings.grappleSpeed = not settings.grappleSpeed
-    return settings.grappleSpeed
-end, true)
-
--- Desync
-createButton("Desync (Once)", function()
-    if not settings.desync then
-        settings.desync = true
-        local oldPos = rootPart.CFrame
-        for i = 1, 10 do
-            rootPart.CFrame = rootPart.CFrame + Vector3.new(math.random(-50, 50), 0, math.random(-50, 50))
-            task.wait(0.1)
-        end
-        rootPart.CFrame = oldPos
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Desync Activated";
-            Text = "Active for 6-7 steals";
-            Duration = 5;
-        })
-    end
-    return settings.desync
-end, true)
-
--- FPS Killer
-createButton("FPS Killer", function()
-    settings.fpsKiller = not settings.fpsKiller
-    if settings.fpsKiller then
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("Part") or obj:IsA("MeshPart") then
-                obj.Material = Enum.Material.SmoothPlastic
-            end
-        end
-    end
-    return settings.fpsKiller
-end, true)
-
--- Anti Ragdoll
-createButton("Anti Ragdoll", function()
-    settings.antiRagdoll = not settings.antiRagdoll
-    return settings.antiRagdoll
-end, true)
-
 -- Infinity Jump
 createButton("Infinity Jump", function()
     settings.infinityJump = not settings.infinityJump
     return settings.infinityJump
 end, true)
 
--- Quantum Cloner (F)
-createButton("Quantum Cloner (F)", function()
-    settings.quantumCloner = not settings.quantumCloner
-    return settings.quantumCloner
+-- Fly
+createButton("Fly (E to toggle)", function()
+    settings.flying = not settings.flying
+    return settings.flying
 end, true)
 
--- Auto Aim
-createButton("Auto Aim (Laser/Web)", function()
-    settings.autoAim = not settings.autoAim
-    return settings.autoAim
+-- NoClip
+createButton("NoClip (Hold Q)", function()
+    settings.noClip = not settings.noClip
+    return settings.noClip
 end, true)
 
--- Go To Best
-createButton("Go To Best", function()
-    -- Encuentra el mejor servidor
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Go To Best";
-        Text = "Searching for best server...";
-        Duration = 3;
-    })
-end, false)
+-- ========================================
+-- COMBAT FEATURES
+-- ========================================
 
--- Auto Kick
-createButton("Auto Kick", function()
-    settings.autoKick = not settings.autoKick
-    return settings.autoKick
-end, true)
+createLabel("=== COMBAT ===")
 
--- Admin Panel
-createButton("Admin Panel (P)", function()
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Admin Panel";
-        Text = "Press P to open";
-        Duration = 3;
-    })
-end, false)
-
--- Glitched Slap
-createButton("Glitched Slap (C): OFF", function()
-    settings.glitchedSlap = not settings.glitchedSlap
-    return settings.glitchedSlap
+-- Anti Ragdoll
+createButton("Anti Ragdoll", function()
+    settings.antiRagdoll = not settings.antiRagdoll
+    return settings.antiRagdoll
 end, true)
 
 -- ========================================
@@ -278,161 +221,274 @@ end, true)
 
 createLabel("=== VISUAL ===")
 
+-- Fullbright
+createButton("Fullbright", function()
+    settings.fullbright = not settings.fullbright
+    if settings.fullbright then
+        game.Lighting.Brightness = 2
+        game.Lighting.ClockTime = 14
+        game.Lighting.FogEnd = 100000
+        game.Lighting.GlobalShadows = false
+        game.Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+    else
+        game.Lighting.Brightness = 1
+        game.Lighting.ClockTime = 12
+        game.Lighting.FogEnd = 10000
+        game.Lighting.GlobalShadows = true
+    end
+    return settings.fullbright
+end, true)
+
 -- Base Transparency
-createButton("Base Transparency: 0.9", function()
-    for _, base in pairs(workspace:GetChildren()) do
-        if base:IsA("Model") and base.Name:find("Base") then
-            for _, part in pairs(base:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.Transparency = settings.baseTransparency
-                end
+createButton("Base Transparency", function()
+    settings.baseTransparency = not settings.baseTransparency
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Parent.Name:find("Base") then
+            if settings.baseTransparency then
+                obj.Transparency = 0.9
+            else
+                obj.Transparency = 0
             end
         end
     end
-    return true
-end, false)
-
--- ESP Names
-createButton("ESP Names", function()
-    settings.espNames = not settings.espNames
-    return settings.espNames
+    return settings.baseTransparency
 end, true)
 
 -- Player ESP
 createButton("Player ESP", function()
     settings.espPlayers = not settings.espPlayers
+    if not settings.espPlayers then
+        for _, esp in pairs(espObjects) do
+            if esp then esp:Destroy() end
+        end
+        espObjects = {}
+    end
     return settings.espPlayers
 end, true)
 
--- ESP Brainrots High Value
-createButton("ESP Brainrots High Value", function()
+-- Brainrot ESP
+createButton("Brainrot ESP", function()
     settings.espBrainrots = not settings.espBrainrots
     return settings.espBrainrots
 end, true)
 
--- ESP Brainrots Special
-createButton("ESP Brainrots Special", function()
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "ESP Special";
-        Text = "Highlighting special brainrots";
-        Duration = 3;
-    })
-    return true
+-- ========================================
+-- UTILITY
+-- ========================================
+
+createLabel("=== UTILITY ===")
+
+-- Rejoin
+createButton("Rejoin Server", function()
+    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
 end, false)
 
--- Anti Bee (B)
-createButton("Anti Bee (B)", function()
-    settings.antiBee = not settings.antiBee
-    return settings.antiBee
-end, true)
-
--- Anti Nuke
-createButton("Anti Nuke", function()
-    settings.antiNuke = not settings.antiNuke
-    return settings.antiNuke
-end, true)
-
--- Anti Turret
-createButton("Anti Turret", function()
-    settings.antiTurret = not settings.antiTurret
-    return settings.antiTurret
-end, true)
-
--- ========================================
--- KEYBINDS
--- ========================================
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
+-- Server Hop
+createButton("Server Hop", function()
+    local HttpService = game:GetService("HttpService")
+    local success, servers = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet(
+            "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Desc&limit=100"
+        ))
+    end)
     
-    -- Q - Grapple Speed
-    if input.KeyCode == Enum.KeyCode.Q and settings.grappleSpeed then
-        -- Aplicar velocidad al grapple
-        local tool = character:FindFirstChildOfClass("Tool")
-        if tool then
-            -- Aumentar velocidad del grapple
-        end
-    end
-    
-    -- F - Quantum Cloner
-    if input.KeyCode == Enum.KeyCode.F and settings.quantumCloner then
-        local clone = character:Clone()
-        clone.Parent = workspace
-        clone:MoveTo(rootPart.Position + Vector3.new(5, 0, 0))
-    end
-    
-    -- B - Anti Bee
-    if input.KeyCode == Enum.KeyCode.B and settings.antiBee then
-        for _, bee in pairs(workspace:GetChildren()) do
-            if bee.Name:find("Bee") then
-                bee:Destroy()
+    if success and servers.data then
+        for _, server in pairs(servers.data) do
+            if server.id ~= game.JobId then
+                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id, player)
+                break
             end
         end
     end
-    
-    -- Space - Infinity Jump
-    if input.KeyCode == Enum.KeyCode.Space and settings.infinityJump then
-        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-    end
-end)
+end, false)
+
+-- Close GUI
+createButton("Close GUI", function()
+    screenGui:Destroy()
+end, false)
 
 -- ========================================
 -- MAIN LOOPS
 -- ========================================
 
--- Anti Ragdoll Loop
+-- Anti Ragdoll
 RunService.Heartbeat:Connect(function()
-    if settings.antiRagdoll then
-        humanoid:ChangeState(Enum.HumanoidStateType.Running)
-    end
-end)
-
--- Speed Boost Loop
-humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-    if settings.speedBoost and humanoid.WalkSpeed ~= settings.speedValue then
-        humanoid.WalkSpeed = settings.speedValue
-    end
-end)
-
--- Auto Aim Loop
-RunService.RenderStepped:Connect(function()
-    if settings.autoAim then
-        local nearestPlayer = nil
-        local shortestDistance = math.huge
-        
-        for _, otherPlayer in pairs(Players:GetPlayers()) do
-            if otherPlayer ~= player and otherPlayer.Character then
-                local distance = (otherPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude
-                if distance < shortestDistance then
-                    shortestDistance = distance
-                    nearestPlayer = otherPlayer
-                end
+    if settings.antiRagdoll and character then
+        for _, v in pairs(character:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = false
             end
         end
-        
-        if nearestPlayer then
-            local targetPos = nearestPlayer.Character.HumanoidRootPart.Position
-            -- Aplicar auto-aim aquí
+        if humanoid.Sit then
+            humanoid.Sit = false
         end
     end
 end)
 
--- ESP Loop
+-- Speed Boost Maintain
+task.spawn(function()
+    while task.wait(0.1) do
+        if settings.speedBoost and humanoid then
+            humanoid.WalkSpeed = settings.speedValue
+        end
+    end
+end)
+
+-- Player ESP Loop
 RunService.RenderStepped:Connect(function()
     if settings.espPlayers then
         for _, otherPlayer in pairs(Players:GetPlayers()) do
-            if otherPlayer ~= player and otherPlayer.Character then
-                -- Crear ESP visual
+            if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = otherPlayer.Character.HumanoidRootPart
+                
+                if not espObjects[otherPlayer.UserId] then
+                    local billboard = Instance.new("BillboardGui")
+                    billboard.Name = "ESP_"..otherPlayer.Name
+                    billboard.Adornee = hrp
+                    billboard.Size = UDim2.new(0, 100, 0, 50)
+                    billboard.StudsOffset = Vector3.new(0, 3, 0)
+                    billboard.AlwaysOnTop = true
+                    billboard.Parent = hrp
+                    
+                    local nameLabel = Instance.new("TextLabel")
+                    nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+                    nameLabel.BackgroundTransparency = 1
+                    nameLabel.Text = otherPlayer.Name
+                    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    nameLabel.TextStrokeTransparency = 0
+                    nameLabel.TextSize = 14
+                    nameLabel.Font = Enum.Font.GothamBold
+                    nameLabel.Parent = billboard
+                    
+                    local distLabel = Instance.new("TextLabel")
+                    distLabel.Size = UDim2.new(1, 0, 0.5, 0)
+                    distLabel.Position = UDim2.new(0, 0, 0.5, 0)
+                    distLabel.BackgroundTransparency = 1
+                    distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                    distLabel.TextStrokeTransparency = 0
+                    distLabel.TextSize = 12
+                    distLabel.Font = Enum.Font.Gotham
+                    distLabel.Parent = billboard
+                    
+                    espObjects[otherPlayer.UserId] = billboard
+                end
+                
+                -- Update distance
+                if espObjects[otherPlayer.UserId] then
+                    local distance = (hrp.Position - rootPart.Position).Magnitude
+                    local distLabel = espObjects[otherPlayer.UserId]:FindFirstChild("TextLabel") and espObjects[otherPlayer.UserId]:FindFirstChild("TextLabel").Parent:FindFirstChild("TextLabel", true)
+                    if distLabel then
+                        espObjects[otherPlayer.UserId]:FindFirstChildWhichIsA("TextLabel", true).NextSibling.Text = math.floor(distance).." studs"
+                    end
+                end
             end
         end
     end
 end)
 
--- Auto Kick Loop
-task.spawn(function()
-    while task.wait(1) do
-        if settings.autoKick then
-            -- Lógica de auto-kick
+-- Brainrot ESP Loop
+RunService.RenderStepped:Connect(function()
+    if settings.espBrainrots then
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("Model") and (obj.Name:find("Brainrot") or obj.Name:find("Brain")) then
+                if not obj:FindFirstChild("BrainrotESP") then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "BrainrotESP"
+                    highlight.FillColor = Color3.fromRGB(255, 215, 0)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 0)
+                    highlight.FillTransparency = 0.5
+                    highlight.OutlineTransparency = 0
+                    highlight.Parent = obj
+                end
+            end
+        end
+    else
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("Highlight") and obj.Name == "BrainrotESP" then
+                obj:Destroy()
+            end
+        end
+    end
+end)
+
+-- Fly System
+local flyConnection
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    -- E to toggle fly
+    if input.KeyCode == Enum.KeyCode.E then
+        settings.flying = not settings.flying
+        
+        if settings.flying then
+            local bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.Name = "FlyVelocity"
+            bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            bodyVelocity.Parent = rootPart
+            
+            local bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.Name = "FlyGyro"
+            bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+            bodyGyro.P = 9e4
+            bodyGyro.Parent = rootPart
+            
+            flyConnection = RunService.RenderStepped:Connect(function()
+                if not settings.flying then
+                    if flyConnection then flyConnection:Disconnect() end
+                    if rootPart:FindFirstChild("FlyVelocity") then rootPart.FlyVelocity:Destroy() end
+                    if rootPart:FindFirstChild("FlyGyro") then rootPart.FlyGyro:Destroy() end
+                    return
+                end
+                
+                local velocity = Vector3.new(0, 0, 0)
+                
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    velocity = velocity + (camera.CFrame.LookVector * settings.flySpeed)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    velocity = velocity - (camera.CFrame.LookVector * settings.flySpeed)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    velocity = velocity - (camera.CFrame.RightVector * settings.flySpeed)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    velocity = velocity + (camera.CFrame.RightVector * settings.flySpeed)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    velocity = velocity + Vector3.new(0, settings.flySpeed, 0)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                    velocity = velocity - Vector3.new(0, settings.flySpeed, 0)
+                end
+                
+                if rootPart:FindFirstChild("FlyVelocity") then
+                    rootPart.FlyVelocity.Velocity = velocity
+                end
+                if rootPart:FindFirstChild("FlyGyro") then
+                    rootPart.FlyGyro.CFrame = camera.CFrame
+                end
+            end)
+        else
+            if flyConnection then flyConnection:Disconnect() end
+            if rootPart:FindFirstChild("FlyVelocity") then rootPart.FlyVelocity:Destroy() end
+            if rootPart:FindFirstChild("FlyGyro") then rootPart.FlyGyro:Destroy() end
+        end
+    end
+    
+    -- Infinity Jump
+    if input.KeyCode == Enum.KeyCode.Space and settings.infinityJump then
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+-- NoClip
+RunService.Stepped:Connect(function()
+    if settings.noClip and UserInputService:IsKeyDown(Enum.KeyCode.Q) then
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
         end
     end
 end)
@@ -441,13 +497,25 @@ end)
 -- INITIALIZATION
 -- ========================================
 
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "SCRIPT 66 Loaded";
-    Text = "All features active";
+    Text = "All working features active";
     Duration = 5;
 })
 
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
-
-print("SCRIPT 66 - Fully Loaded")
-print("Keybinds: Q (Grapple), F (Clone), B (Anti-Bee), P (Admin)")
+print("========================================")
+print("SCRIPT 66 - Loaded Successfully")
+print("Working Features:")
+print("- Speed Boost")
+print("- Infinity Jump")
+print("- Fly (E to toggle, WASD + Space/Shift)")
+print("- NoClip (Hold Q)")
+print("- Anti Ragdoll")
+print("- Fullbright")
+print("- Base Transparency")
+print("- Player ESP")
+print("- Brainrot ESP")
+print("- Server Hop/Rejoin")
+print("========================================")
