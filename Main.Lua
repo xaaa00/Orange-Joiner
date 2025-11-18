@@ -91,7 +91,7 @@ local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -20, 0, 22)
 statusLabel.Position = UDim2.new(0, 10, 0, 45)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Ready to search globally"
+statusLabel.Text = ""
 statusLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
 statusLabel.TextSize = 11
 statusLabel.Font = Enum.Font.Gotham
@@ -136,7 +136,7 @@ local scanButton = Instance.new("TextButton")
 scanButton.Size = UDim2.new(0, 220, 0, 35)
 scanButton.Position = UDim2.new(0.5, -110, 1, -45)
 scanButton.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
-scanButton.Text = "START GLOBAL SEARCH"
+scanButton.Text = "START"
 scanButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 scanButton.TextSize = 12
 scanButton.Font = Enum.Font.GothamBold
@@ -338,7 +338,7 @@ scanButton.MouseButton1Click:Connect(function()
     if isScanning then
         isScanning = false
         serverQueue = {}
-        scanButton.Text = "START GLOBAL SEARCH"
+        scanButton.Text = "START"
         scanButton.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
         statusLabel.Text = "Search stopped"
         statusLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
