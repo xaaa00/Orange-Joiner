@@ -1,6 +1,5 @@
 -- ========================================
--- ORANGE JOINER V3 FOR STEAL A BRAINROT
--- Fast global search - Auto-join when found
+-- ORANGE JOINER 
 -- ========================================
 
 local TeleportService = game:GetService("TeleportService")
