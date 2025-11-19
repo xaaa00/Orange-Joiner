@@ -1,3 +1,8 @@
+-- ========================================
+-- GRAPPLE HOOK SPEED BOOSTER
+-- Aumenta velocidad masivamente con el gancho
+-- ========================================
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
