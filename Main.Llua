@@ -19,7 +19,7 @@ end)
 local settings = {
     grappleSpeedEnabled = false,
     normalSpeed = 131.5,  -- Velocidad normal del grapple
-    boostedSpeed = 500,   -- Velocidad aumentada
+    boostedSpeed = 200,   -- Velocidad aumentada (bajada para evitar rollback)
     autoActivate = true   -- Auto-activar cuando usas el grapple
 }
 
@@ -102,7 +102,7 @@ local speedLabel = Instance.new("TextLabel")
 speedLabel.Size = UDim2.new(1, -20, 0, 20)
 speedLabel.Position = UDim2.new(0, 10, 0, 70)
 speedLabel.BackgroundTransparency = 1
-speedLabel.Text = "Boost Speed: 500"
+speedLabel.Text = "Boost Speed: 200"
 speedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 speedLabel.TextSize = 11
 speedLabel.Font = Enum.Font.Gotham
@@ -160,18 +160,25 @@ local function boostGrapple()
         
         -- Buscar BodyVelocity o similar que controla el movimiento
         for _, obj in pairs(rootPart:GetChildren()) do
-            if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("BodyThrust") then
-                -- Aumentar la velocidad masivamente
-                if obj:IsA("BodyVelocity") then
-                    obj.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                    obj.Velocity = obj.Velocity.Unit * settings.boostedSpeed
+            if obj:IsA("BodyVelocity") then
+                -- Aumentar la velocidad de forma controlada
+                obj.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                local currentSpeed = obj.Velocity.Magnitude
+                if currentSpeed > 50 then -- Solo aplicar si ya estás usando el grapple
+                    obj.Velocity = obj.Velocity.Unit * math.min(settings.boostedSpeed, currentSpeed * 1.5)
                 end
             end
         end
         
-        -- También modificar AssemblyLinearVelocity
-        if rootPart.AssemblyLinearVelocity.Magnitude > 10 then
-            rootPart.AssemblyLinearVelocity = rootPart.AssemblyLinearVelocity.Unit * settings.boostedSpeed
+        -- Modificar velocidad de forma más suave
+        if rootPart.AssemblyLinearVelocity.Magnitude > 50 then
+            local currentVel = rootPart.AssemblyLinearVelocity
+            local targetSpeed = math.min(settings.boostedSpeed, currentVel.Magnitude * 1.5)
+            rootPart.AssemblyLinearVelocity = currentVel.Unit * targetSpeed
+            
+            -- Anclar momentáneamente para evitar rollback
+            task.wait()
+            rootPart.Anchored = false
         end
     end
 end
@@ -200,10 +207,13 @@ RunService.RenderStepped:Connect(function()
         local tool = character:FindFirstChildOfClass("Tool")
         
         if tool and (tool.Name:lower():find("grapple") or tool.Name:lower():find("hook")) then
-            -- Si está usando el grapple, aplicar boost constante
-            if rootPart.AssemblyLinearVelocity.Magnitude > 50 then
+            -- Si está usando el grapple, aplicar boost controlado
+            local currentSpeed = rootPart.AssemblyLinearVelocity.Magnitude
+            
+            if currentSpeed > 50 and currentSpeed < settings.boostedSpeed then
                 local direction = rootPart.AssemblyLinearVelocity.Unit
-                rootPart.AssemblyLinearVelocity = direction * settings.boostedSpeed
+                -- Aumentar gradualmente en lugar de instantáneamente
+                rootPart.AssemblyLinearVelocity = direction * math.min(settings.boostedSpeed, currentSpeed * 1.3)
             end
         end
     end
