@@ -1,0 +1,255 @@
+-- ========================================
+-- GRAPPLE HOOK SPEED BOOSTER
+-- Aumenta velocidad masivamente con el gancho
+-- ========================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+-- Esperar character
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Actualizar character al respawnear
+player.CharacterAdded:Connect(function(char)
+    character = char
+    humanoid = char:WaitForChild("Humanoid")
+    rootPart = char:WaitForChild("HumanoidRootPart")
+end)
+
+-- Settings
+local settings = {
+    grappleSpeedEnabled = false,
+    normalSpeed = 131.5,  -- Velocidad normal del grapple
+    boostedSpeed = 200,   -- Velocidad aumentada (bajada para evitar rollback)
+    autoActivate = true   -- Auto-activar cuando usas el grapple
+}
+
+-- ========================================
+-- GUI
+-- ========================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "GrappleSpeedGUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 250, 0, 180)
+mainFrame.Position = UDim2.new(0.5, -125, 0, 20)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(255, 100, 0)
+stroke.Thickness = 3
+stroke.Parent = mainFrame
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = mainFrame
+
+-- Dragging
+local dragging = false
+local dragInput, mousePos, framePos
+
+mainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        mousePos = input.Position
+        framePos = mainFrame.Position
+    end
+end)
+
+mainFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - mousePos
+        mainFrame.Position = UDim2.new(
+            framePos.X.Scale, framePos.X.Offset + delta.X,
+            framePos.Y.Scale, framePos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 35)
+title.BackgroundTransparency = 1
+title.Text = "GRAPPLE SPEED BOOST"
+title.TextColor3 = Color3.fromRGB(255, 100, 0)
+title.TextSize = 14
+title.Font = Enum.Font.GothamBold
+title.Parent = mainFrame
+
+-- Status Label
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, -20, 0, 25)
+statusLabel.Position = UDim2.new(0, 10, 0, 40)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Status: OFF"
+statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+statusLabel.TextSize = 12
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = mainFrame
+
+-- Speed Label
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(1, -20, 0, 20)
+speedLabel.Position = UDim2.new(0, 10, 0, 70)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Boost Speed: 200"
+speedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+speedLabel.TextSize = 11
+speedLabel.Font = Enum.Font.Gotham
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLabel.Parent = mainFrame
+
+-- Toggle Button
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 210, 0, 35)
+toggleButton.Position = UDim2.new(0.5, -105, 0, 100)
+toggleButton.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
+toggleButton.Text = "ACTIVATE BOOST"
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.TextSize = 12
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.BorderSizePixel = 0
+toggleButton.Parent = mainFrame
+
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 8)
+buttonCorner.Parent = toggleButton
+
+-- Close Button
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 210, 0, 30)
+closeButton.Position = UDim2.new(0.5, -105, 0, 142)
+closeButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+closeButton.Text = "Close GUI"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 11
+closeButton.Font = Enum.Font.Gotham
+closeButton.BorderSizePixel = 0
+closeButton.Parent = mainFrame
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = closeButton
+
+-- ========================================
+-- GRAPPLE HOOK DETECTION & BOOST
+-- ========================================
+
+local grappleConnection
+local lastGrappleTime = 0
+
+-- Función para detectar y aumentar velocidad del grapple
+local function boostGrapple()
+    if not settings.grappleSpeedEnabled then return end
+    
+    -- Buscar el Grapple Hook equipado
+    local tool = character:FindFirstChildOfClass("Tool")
+    
+    if tool and (tool.Name:lower():find("grapple") or tool.Name:lower():find("hook")) then
+        -- Encontró el grapple equipado
+        
+        -- Buscar BodyVelocity o similar que controla el movimiento
+        for _, obj in pairs(rootPart:GetChildren()) do
+            if obj:IsA("BodyVelocity") then
+                -- Aumentar la velocidad de forma controlada
+                obj.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                local currentSpeed = obj.Velocity.Magnitude
+                if currentSpeed > 50 then -- Solo aplicar si ya estás usando el grapple
+                    obj.Velocity = obj.Velocity.Unit * math.min(settings.boostedSpeed, currentSpeed * 1.5)
+                end
+            end
+        end
+        
+        -- Modificar velocidad de forma más suave
+        if rootPart.AssemblyLinearVelocity.Magnitude > 50 then
+            local currentVel = rootPart.AssemblyLinearVelocity
+            local targetSpeed = math.min(settings.boostedSpeed, currentVel.Magnitude * 1.5)
+            rootPart.AssemblyLinearVelocity = currentVel.Unit * targetSpeed
+            
+            -- Anclar momentáneamente para evitar rollback
+            task.wait()
+            rootPart.Anchored = false
+        end
+    end
+end
+
+-- Detectar cuando usas el grapple
+character.ChildAdded:Connect(function(child)
+    if child:IsA("Tool") and (child.Name:lower():find("grapple") or child.Name:lower():find("hook")) then
+        if settings.grappleSpeedEnabled then
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Grapple Detected";
+                Text = "Speed boost active!";
+                Duration = 2;
+            })
+        end
+    end
+end)
+
+-- Loop principal para aplicar boost
+RunService.Heartbeat:Connect(function()
+    boostGrapple()
+end)
+
+-- También aplicar boost cuando se detecta movimiento rápido
+RunService.RenderStepped:Connect(function()
+    if settings.grappleSpeedEnabled then
+        local tool = character:FindFirstChildOfClass("Tool")
+        
+        if tool and (tool.Name:lower():find("grapple") or tool.Name:lower():find("hook")) then
+            -- Si está usando el grapple, aplicar boost controlado
+            local currentSpeed = rootPart.AssemblyLinearVelocity.Magnitude
+            
+            if currentSpeed > 50 and currentSpeed < settings.boostedSpeed then
+                local direction = rootPart.AssemblyLinearVelocity.Unit
+                -- Aumentar gradualmente en lugar de instantáneamente
+                rootPart.AssemblyLinearVelocity = direction * math.min(settings.boostedSpeed, currentSpeed * 1.3)
+            end
+        end
+    end
+end)
+
+-- ========================================
+-- BUTTON FUNCTIONS
+-- ========================================
+
+toggleButton.MouseButton1Click:Connect(function()
+    settings.grappleSpeedEnabled = not settings.grappleSpeedEnabled
+    
+    if settings.grappleSpeedEnabled then
+        toggleButton.Text = "DEACTIVATE BOOST"
+        toggleButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+        statusLabel.Text = "Status: ON"
+        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Grapple Boost";
+            Text = "Activated! Use your grapple hook";
+            Duration = 3;
+        })
+    else
+        toggleButton.Text = "ACTIVATE BOOST"
+        toggleButton.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
+        statusLabel.Text = "Status: OFF"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    end
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
